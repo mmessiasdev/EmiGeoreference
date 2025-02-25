@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "profile",
+  "info": {
+    "name": "profile",
+    "description": ""
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true,
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "email": {
+      "type": "string"
+    },
+    "user": {
+      "via": "profile",
+      "plugin": "users-permissions",
+      "model": "user"
+    },
+    "fullname": {
+      "type": "string"
+    },
+    "sector": {
+      "type": "string"
+    },
+    "personidvoalle": {
+      "type": "string"
+    }
+  }
+}
