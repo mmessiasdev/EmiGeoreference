@@ -1,0 +1,52 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/polygons",
+      "handler": "polygons.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/polygons/count",
+      "handler": "polygons.count",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/polygons/:id",
+      "handler": "polygons.findOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/polygons",
+      "handler": "polygons.create",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/polygons/:id",
+      "handler": "polygons.update",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/polygons/:id",
+      "handler": "polygons.delete",
+      "config": {
+        "policies": []
+      }
+    }
+  ]
+}

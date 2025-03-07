@@ -14,11 +14,12 @@ export const getPolygons = async () => {
 };
 
 // Salva um novo polígono
-export const savePolygon = async (name, coordinates) => {
+export const savePolygon = async (name, coordinates, markers) => {
   try {
     const response = await axios.post(`${API_URL}/polygons`, {
       name,
       coordinates,
+      markers, // Salva as coordenadas dos ícones
     });
     return response.data;
   } catch (error) {
@@ -28,11 +29,12 @@ export const savePolygon = async (name, coordinates) => {
 };
 
 // Atualiza um polígono existente
-export const updatePolygon = async (id, name, coordinates) => {
+export const updatePolygon = async (id, name, coordinates, markers) => {
   try {
     const response = await axios.put(`${API_URL}/polygons/${id}`, {
       name,
       coordinates,
+      markers, // Atualiza as coordenadas dos ícones
     });
     return response.data;
   } catch (error) {
