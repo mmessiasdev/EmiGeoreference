@@ -11,7 +11,7 @@ export const colors = {
     white: "#ffffff", // Branco
     black: "#000000", // Preto
     polygonEdit: "orange", // Cor do polígono em edição
-    polygonSaved: "green", // Cor do polígono salvo
+    polygonSaved: "yellow", // Cor do polígono salvo
     polyline: "blue", // Cor da linha
     marker: "red", // Cor do marcador
   };

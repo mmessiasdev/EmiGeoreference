@@ -1,99 +1,108 @@
 import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Polyline, Marker, Polygon, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"; // Importe o CSS do Leaflet
-import { FaSave, FaEraser, FaEdit, FaTrash } from "react-icons/fa"; // Importando os ícones
-import { getPolygons, savePolygon, updatePolygon, deletePolygon } from "../services/api"; // Importando o serviço de API
-import { colors } from "../constants/theme"; // Importando as cores do tema
+import "leaflet/dist/leaflet.css";
+import { FaSave, FaEraser, FaEdit, FaTrash } from "react-icons/fa";
+import { getItems, saveItem, updateItem, deleteItem } from "../services/api.js";
+import { colors } from "../constants/theme";
 
-// Ícone personalizado vermelho
 const redIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  iconSize: [25, 41], // Tamanho do ícone
-  iconAnchor: [12, -1], // Ponto de ancoragem do ícone
-  popupAnchor: [1, -34], // Ponto de ancoragem do popup
+  iconSize: [25, 41],
+  iconAnchor: [12, -1],
+  popupAnchor: [1, -34],
+});
+
+const blueIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, -1],
+  popupAnchor: [1, -34],
 });
 
 function MapComponent() {
   const [lineCoords, setLineCoords] = useState([]);
   const [markers, setMarkers] = useState([]);
-  const [savedPolygons, setSavedPolygons] = useState([]);
-  const [polygonName, setPolygonName] = useState("");
-  const [editingPolygonId, setEditingPolygonId] = useState(null); // ID do polígono sendo editado
+  const [savedItems, setSavedItems] = useState([]);
+  const [itemName, setItemName] = useState("");
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [itemType, setItemType] = useState("polygon");
 
-  // Busca os polígonos salvos ao carregar o componente
   useEffect(() => {
-    const fetchPolygons = async () => {
-      const polygons = await getPolygons();
-      setSavedPolygons(polygons);
+    const fetchItems = async () => {
+      try {
+        const items = await getItems();
+        setSavedItems(items);
+      } catch (error) {
+        console.error("Erro ao buscar itens:", error);
+      }
     };
-    fetchPolygons();
+    fetchItems();
   }, []);
 
-  // Componente para capturar eventos de clique no mapa
   function MapEvents() {
     useMapEvents({
       click: (e) => {
         const { lat, lng } = e.latlng;
-        // Adiciona a coordenada à lista de pontos da linha
-        setLineCoords((prevCoords) => [...prevCoords, [lat, lng]]);
-        // Adiciona um marcador no local clicado
+        if (itemType === "polygon") {
+          setLineCoords((prevCoords) => [...prevCoords, [lat, lng]]);
+        }
         setMarkers((prevMarkers) => [...prevMarkers, { lat, lng }]);
       },
     });
     return null;
   }
 
-  // Função para salvar ou atualizar o polígono
-  const handleSavePolygon = async () => {
-    if (!polygonName || lineCoords.length < 2) {
-      alert("Por favor, insira um nome para o polígono e desenhe pelo menos 2 pontos.");
+  const handleSaveItem = async () => {
+    if (!itemName || (itemType === "polygon" && lineCoords.length < 2)) {
+      alert(`Por favor, insira um nome e ${itemType === "polygon" ? "desenhe pelo menos 2 pontos" : "selecione uma coordenada"}.`);
       return;
     }
 
-    if (editingPolygonId) {
-      // Atualiza o polígono existente
-      const updatedPolygon = await updatePolygon(editingPolygonId, polygonName, lineCoords, markers);
-      if (updatedPolygon) {
-        setSavedPolygons((prev) =>
-          prev.map((polygon) =>
-            polygon.id === editingPolygonId ? updatedPolygon : polygon
-          )
+    const itemData = {
+      name: itemName,
+      coordinates: itemType === "polygon" ? lineCoords : markers[markers.length - 1],
+      markers: itemType === "polygon" ? markers : [],
+      type: itemType,
+    };
+
+    if (editingItemId) {
+      const updatedItem = await updateItem(editingItemId, itemData.name, itemData.coordinates, itemData.markers, itemData.type);
+      if (updatedItem) {
+        setSavedItems((prev) =>
+          prev.map((item) => (item.id === editingItemId ? updatedItem : item))
         );
-        setEditingPolygonId(null); // Sai do modo de edição
+        setEditingItemId(null);
       }
     } else {
-      // Salva um novo polígono
-      const savedPolygon = await savePolygon(polygonName, lineCoords, markers);
-      if (savedPolygon) {
-        setSavedPolygons([...savedPolygons, savedPolygon]);
+      const savedItem = await saveItem(itemData.name, itemData.coordinates, itemData.markers, itemData.type);
+      if (savedItem) {
+        setSavedItems([...savedItems, savedItem]);
       }
     }
 
-    // Limpa o formulário e a linha, mas mantém os marcadores
-    setPolygonName("");
+    setItemName("");
     setLineCoords([]);
+    setMarkers([]);
   };
 
-  // Função para editar um polígono
-  const handleEditPolygon = (polygon) => {
-    setPolygonName(polygon.name);
-    setLineCoords(polygon.coordinates);
-    setMarkers(polygon.markers || []); // Carrega os marcadores salvos
-    setEditingPolygonId(polygon.id);
+  const handleEditItem = (item) => {
+    setItemName(item.name);
+    setLineCoords(item.coordinates);
+    setMarkers(item.markers || []);
+    setEditingItemId(item.id);
+    setItemType(item.type);
   };
 
-  // Função para deletar um polígono
-  const handleDeletePolygon = async (id) => {
-    const success = await deletePolygon(id);
+  const handleDeleteItem = async (id) => {
+    const success = await deleteItem(id);
     if (success) {
-      setSavedPolygons((prev) => prev.filter((polygon) => polygon.id !== id));
+      setSavedItems((prev) => prev.filter((item) => item.id !== id));
     }
   };
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      {/* Mapa */}
       <div style={{ position: "absolute", width: "100%", height: "100vh" }}>
         <div
           style={{
@@ -101,168 +110,181 @@ function MapComponent() {
             width: "100%",
             zIndex: "1000",
             padding: "10px",
-            background: `linear-gradient(to top, transparent, ${colors.black})`, // Usando a cor do tema
-            display: "flex", // Alinha os botões horizontalmente
+            background: `linear-gradient(to top, transparent, ${colors.black})`,
+            display: "flex",
             justifyContent: "end",
-            gap: "8px", // Espaçamento entre os botões
+            gap: "8px",
           }}
         >
-          {/* Input para o nome do polígono */}
           <input
             type="text"
-            placeholder="Nome do Polígono"
-            value={polygonName}
-            onChange={(e) => setPolygonName(e.target.value)}
+            placeholder={`Nome do ${itemType === "polygon" ? "Polígono" : "Checkpoint"}`}
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
             style={{
               padding: "8px",
               borderRadius: "4px",
-              border: `1px solid ${colors.secondary}`, // Usando a cor do tema
+              border: `1px solid ${colors.secondary}`,
             }}
           />
-
-          {/* Botão para salvar ou atualizar o polígono */}
+          <select
+            value={itemType}
+            onChange={(e) => setItemType(e.target.value)}
+            style={{
+              padding: "8px",
+              borderRadius: "4px",
+              border: `1px solid ${colors.secondary}`,
+            }}
+          >
+            <option value="polygon">Polígono</option>
+            <option value="checkpoint">Checkpoint</option>
+          </select>
           <button
-            onClick={handleSavePolygon}
+            onClick={handleSaveItem}
             style={{
               display: "flex",
               alignItems: "center",
               padding: "8px 16px",
-              backgroundColor: colors.black, // Usando a cor do tema
+              backgroundColor: colors.black,
               border: "none",
               borderRadius: "4px",
               cursor: "pointer",
               fontSize: "14px",
             }}
           >
-            <FaSave style={{ marginRight: "8px" }} /> {/* Ícone de salvar */}
-            {editingPolygonId ? "Atualizar Polígono" : "Salvar Polígono"}
+            <FaSave style={{ marginRight: "8px" }} />
+            {editingItemId ? "Atualizar" : "Salvar"}
           </button>
-
-          {/* Botão para limpar a linha e os marcadores */}
           <button
             onClick={() => {
               setLineCoords([]);
               setMarkers([]);
-              setPolygonName("");
-              setEditingPolygonId(null);
+              setItemName("");
+              setEditingItemId(null);
             }}
             style={{
               display: "flex",
               alignItems: "center",
               padding: "8px 16px",
-              backgroundColor: colors.black, // Usando a cor do tema
+              backgroundColor: colors.black,
               border: "none",
               borderRadius: "4px",
               cursor: "pointer",
               fontSize: "14px",
             }}
           >
-            <FaEraser style={{ marginRight: "8px" }} /> {/* Ícone de limpar */}
+            <FaEraser style={{ marginRight: "8px" }} />
             Limpar
           </button>
         </div>
-        {/* Contêiner do Mapa */}
         <MapContainer
           center={[51.505, -0.09]}
           zoom={13}
-          style={{ height: "100vh", width: "100%", position: "relative" }} // Altura e largura definidas
+          style={{ height: "100vh", width: "100%", position: "relative" }}
         >
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
-          />          <MapEvents />
-          {/* Renderiza a linha se houver pelo menos 2 pontos */}
-          {lineCoords.length > 1 && (
-            <Polyline positions={lineCoords} color={colors.polyline} /> // Usando a cor do tema
+          />
+          <MapEvents />
+          {lineCoords.length > 1 && itemType === "polygon" && (
+            <Polyline positions={lineCoords} color={colors.polyline} />
           )}
-          {/* Renderiza os marcadores atuais */}
           {markers.map((marker, index) => (
-            <Marker key={index} position={[marker.lat, marker.lng]} icon={redIcon} />
+            <Marker
+              key={index}
+              position={[marker.lat, marker.lng]}
+              icon={itemType === "polygon" ? redIcon : blueIcon}
+            />
           ))}
-          {/* Renderiza os polígonos salvos e seus marcadores */}
-          {savedPolygons.map((polygon) => {
-            if (polygon.coordinates && Array.isArray(polygon.coordinates)) {
+          {savedItems.map((item) => {
+            if (item.type === "polygon" && Array.isArray(item.coordinates)) {
               return (
-                <React.Fragment key={polygon.id}>
+                <React.Fragment key={item.id}>
                   <Polygon
-                    positions={polygon.coordinates}
+                    positions={item.coordinates}
                     color={
-                      polygon.id === editingPolygonId
-                        ? colors.polygonEdit // Usando a cor do tema
-                        : colors.polygonSaved // Usando a cor do tema
+                      item.id === editingItemId
+                        ? colors.polygonEdit
+                        : colors.polygonSaved
                     }
                   />
-                  {/* Renderiza os marcadores salvos */}
-                  {polygon.markers &&
-                    polygon.markers.map((marker, index) => (
-                      <Marker
-                        key={`${polygon.id}-${index}`}
-                        position={[marker.lat, marker.lng]}
-                        icon={redIcon} // Usando o ícone personalizado
-                      />
-                    ))}
+                  {item.coordinates.map((coordinate, index) => (
+                    <Marker
+                      key={`${item.id}-${index}`}
+                      position={[coordinate[0], coordinate[1]]}
+                      icon={redIcon}
+                    />
+                  ))}
                 </React.Fragment>
+              );
+            } else if (item.type === "checkpoint" && item.coordinates) {
+              const position = item.coordinates; // Já é um objeto { lat, lng }
+              return (
+                <Marker
+                  key={item.id}
+                  position={[position.lat, position.lng]}
+                  icon={blueIcon}
+                />
               );
             }
             return null;
           })}
         </MapContainer>
       </div>
-
-      {/* Painel lateral para listar e gerenciar polígonos */}
       <div
         style={{
           width: "300px",
           padding: "10px",
-          background: colors.background, // Usando a cor do tema
+          background: colors.background,
           overflowY: "auto",
           zIndex: "1000",
           color: colors.black,
         }}
       >
-        <h2>Polígonos Salvos</h2>
-        {savedPolygons.map((polygon) => (
+        <h2>Itens Salvos</h2>
+        {savedItems.map((item) => (
           <div
-            key={polygon.id}
+            key={item.id}
             style={{
               marginBottom: "10px",
               padding: "10px",
-              background: colors.primary, // Usando a cor do tema
+              background: colors.primary,
               borderRadius: "4px",
               color: colors.white,
               boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <strong>{polygon.name}</strong>
+            <strong>{item.name}</strong> ({item.type})
             <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
               <button
-                onClick={() => handleEditPolygon(polygon)}
+                onClick={() => handleEditItem(item)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   padding: "4px 8px",
-                  backgroundColor: colors.primary, // Usando a cor do tema
+                  backgroundColor: colors.primary,
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
                   fontSize: "12px",
-                  color: colors.black, // Usando a cor do tema
+                  color: colors.black,
                 }}
               >
                 <FaEdit style={{ marginRight: "4px" }} /> Editar
               </button>
               <button
-                onClick={() => handleDeletePolygon(polygon.id)}
+                onClick={() => handleDeleteItem(item.id)}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   padding: "4px 8px",
-                  backgroundColor: colors.danger, // Usando a cor do tema
+                  backgroundColor: colors.danger,
                   border: "none",
                   borderRadius: "4px",
                   cursor: "pointer",
                   fontSize: "12px",
-                  color: colors.black, // Usando a cor do tema
+                  color: colors.black,
                 }}
               >
                 <FaTrash style={{ marginRight: "4px" }} /> Deletar

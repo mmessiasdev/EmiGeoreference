@@ -2,7 +2,8 @@
   "kind": "collectionType",
   "collectionName": "polygons",
   "info": {
-    "name": "Polygons"
+    "name": "Polygons",
+    "description": ""
   },
   "options": {
     "increments": true,
@@ -16,6 +17,9 @@
     },
     "coordinates": {
       "type": "json"
+    },
+    "type": {
+      "type": "string"
     }
   }
 }

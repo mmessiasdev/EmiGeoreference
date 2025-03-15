@@ -1,55 +1,53 @@
-import axios from "axios";
-
+// api.js
 const API_URL = "http://localhost:1337";
 
-// Busca todos os polígonos salvos
-export const getPolygons = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/polygons`);
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao buscar polígonos:", error);
-    return [];
+
+// Função para buscar todos os itens (polígonos e checkpoints)
+export const getItems = async () => {
+  const response = await fetch(`${API_URL}/polygons`);
+  if (!response.ok) {
+    throw new Error("Erro ao buscar itens");
   }
+  return response.json();
 };
 
-// Salva um novo polígono
-export const savePolygon = async (name, coordinates, markers) => {
-  try {
-    const response = await axios.post(`${API_URL}/polygons`, {
-      name,
-      coordinates,
-      markers, // Salva as coordenadas dos ícones
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao salvar polígono:", error);
-    return null;
+// Função para salvar um item (polígono ou checkpoint)
+export const saveItem = async (name, coordinates, markers, type) => {
+  const response = await fetch(`${API_URL}/polygons`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, coordinates, markers, type }),
+  });
+  if (!response.ok) {
+    throw new Error("Erro ao salvar item");
   }
+  return response.json();
 };
 
-// Atualiza um polígono existente
-export const updatePolygon = async (id, name, coordinates, markers) => {
-  try {
-    const response = await axios.put(`${API_URL}/polygons/${id}`, {
-      name,
-      coordinates,
-      markers, // Atualiza as coordenadas dos ícones
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Erro ao atualizar polígono:", error);
-    return null;
+// Função para atualizar um item (polígono ou checkpoint)
+export const updateItem = async (id, name, coordinates, markers, type) => {
+  const response = await fetch(`${API_URL}/polygons/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name, coordinates, markers, type }),
+  });
+  if (!response.ok) {
+    throw new Error("Erro ao atualizar item");
   }
+  return response.json();
 };
 
-// Deleta um polígono existente
-export const deletePolygon = async (id) => {
-  try {
-    await axios.delete(`${API_URL}/polygons/${id}`);
-    return true;
-  } catch (error) {
-    console.error("Erro ao deletar polígono:", error);
-    return false;
+// Função para deletar um item (polígono ou checkpoint)
+export const deleteItem = async (id) => {
+  const response = await fetch(`${API_URL}/polygons/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    throw new Error("Erro ao deletar item");
   }
+  return response.ok;
 };
