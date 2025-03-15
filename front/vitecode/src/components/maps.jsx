@@ -59,15 +59,22 @@ function MapComponent() {
       return;
     }
 
+    // Para ambos os tipos, use todos os marcadores
     const itemData = {
       name: itemName,
-      coordinates: itemType === "polygon" ? lineCoords : markers[markers.length - 1],
-      markers: itemType === "polygon" ? markers : [],
+      coordinates: itemType === "polygon" ? lineCoords : markers, // Usa todos os marcadores
+      markers: markers, // Sempre usa todos os marcadores
       type: itemType,
     };
 
     if (editingItemId) {
-      const updatedItem = await updateItem(editingItemId, itemData.name, itemData.coordinates, itemData.markers, itemData.type);
+      const updatedItem = await updateItem(
+        editingItemId,
+        itemData.name,
+        itemData.coordinates,
+        itemData.markers,
+        itemData.type
+      );
       if (updatedItem) {
         setSavedItems((prev) =>
           prev.map((item) => (item.id === editingItemId ? updatedItem : item))
@@ -75,7 +82,12 @@ function MapComponent() {
         setEditingItemId(null);
       }
     } else {
-      const savedItem = await saveItem(itemData.name, itemData.coordinates, itemData.markers, itemData.type);
+      const savedItem = await saveItem(
+        itemData.name,
+        itemData.coordinates,
+        itemData.markers,
+        itemData.type
+      );
       if (savedItem) {
         setSavedItems([...savedItems, savedItem]);
       }
@@ -88,8 +100,8 @@ function MapComponent() {
 
   const handleEditItem = (item) => {
     setItemName(item.name);
-    setLineCoords(item.coordinates);
-    setMarkers(item.markers || []);
+    setLineCoords(item.coordinates); // Já é um array
+    setMarkers(item.markers || []); // Usa todos os marcadores
     setEditingItemId(item.id);
     setItemType(item.type);
   };
@@ -218,14 +230,17 @@ function MapComponent() {
                   ))}
                 </React.Fragment>
               );
-            } else if (item.type === "checkpoint" && item.coordinates) {
-              const position = item.coordinates; // Já é um objeto { lat, lng }
+            } else if (item.type === "checkpoint" && Array.isArray(item.coordinates)) {
               return (
-                <Marker
-                  key={item.id}
-                  position={[position.lat, position.lng]}
-                  icon={blueIcon}
-                />
+                <React.Fragment key={item.id}>
+                  {item.coordinates.map((coordinate, index) => (
+                    <Marker
+                      key={`${item.id}-${index}`}
+                      position={[coordinate.lat, coordinate.lng]}
+                      icon={blueIcon}
+                    />
+                  ))}
+                </React.Fragment>
               );
             }
             return null;
