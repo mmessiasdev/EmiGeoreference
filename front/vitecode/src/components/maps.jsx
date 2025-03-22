@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Polyline, Marker, Polygon, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { FaSave, FaEraser, FaEdit, FaTrash } from "react-icons/fa";
+import { FaSave, FaEraser, FaEdit, FaTrash, FaSignOutAlt } from "react-icons/fa"; // Adicione o ícone de saída
 import { getItems, saveItem, updateItem, deleteItem } from "../services/api.js";
-import { colors } from "../constants/theme";
+import { colors } from "./constants/theme.js";
+import { useNavigate } from "react-router-dom"; // Importe useNavigate para redirecionar
 
 const redIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
@@ -27,6 +28,7 @@ function MapComponent() {
   const [itemName, setItemName] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
   const [itemType, setItemType] = useState("polygon");
+  const navigate = useNavigate(); // Hook para redirecionar
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -39,6 +41,11 @@ function MapComponent() {
     };
     fetchItems();
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("jwt"); // Remove o token JWT
+    navigate("/login"); // Redireciona para a tela de login
+  };
 
   function MapEvents() {
     useMapEvents({
@@ -59,11 +66,10 @@ function MapComponent() {
       return;
     }
 
-    // Para ambos os tipos, use todos os marcadores
     const itemData = {
       name: itemName,
-      coordinates: itemType === "polygon" ? lineCoords : markers, // Usa todos os marcadores
-      markers: markers, // Sempre usa todos os marcadores
+      coordinates: itemType === "polygon" ? lineCoords : markers,
+      markers: markers,
       type: itemType,
     };
 
@@ -100,8 +106,8 @@ function MapComponent() {
 
   const handleEditItem = (item) => {
     setItemName(item.name);
-    setLineCoords(item.coordinates); // Já é um array
-    setMarkers(item.markers || []); // Usa todos os marcadores
+    setLineCoords(item.coordinates);
+    setMarkers(item.markers || []);
     setEditingItemId(item.id);
     setItemType(item.type);
   };
@@ -187,6 +193,23 @@ function MapComponent() {
           >
             <FaEraser style={{ marginRight: "8px" }} />
             Limpar
+          </button>
+          {/* Botão de Sair da Conta */}
+          <button
+            onClick={handleLogout}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              padding: "8px 16px",
+              backgroundColor: colors.danger,
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "14px",
+            }}
+          >
+            <FaSignOutAlt style={{ marginRight: "8px" }} />
+            Sair
           </button>
         </div>
         <MapContainer
